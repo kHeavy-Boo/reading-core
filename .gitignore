@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.wav
+.env
+.venv/
+venv/
+.pytest_cache/
+reading_audio_test/
+reading_bridge_audio_test/
