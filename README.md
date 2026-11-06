@@ -87,14 +87,14 @@ VOICEVOXを起動した状態で、同じPowerShellから実行します。
 python bridge_handoff_test.py
 ```
 
-このサンプルは次の4例を合成します。
+このサンプルは次の4例を合成します。読み指定はコードに重複登録せず、`MISREAD_WORDS.md` の登録語から取得します。
 
 | 文章 | 指定する読み |
 | --- | --- |
-| 夜の人気のない山道を歩いた。 | 人気 → ひとけ |
-| 生物は冷蔵庫に入れてください。 | 生物 → なまもの |
-| 市場で魚を買いました。 | 市場 → いちば |
-| 今日の天気は晴れです。 | 指定なし |
+| 夜の人気のない山道を歩いた。 | MD登録語：人気 → ひとけ |
+| 生物は冷蔵庫に入れてください。 | MD登録語：生物 → なまもの |
+| 市場で魚を買いました。 | MD登録語：市場 → いちば |
+| 今日の天気は晴れです。 | 登録語なし |
 
 **成功の目安：** PowerShellに `結果: 4/4 件合成` と表示され、`reading_bridge_audio_test` フォルダにWAVファイルとJSONレポートが生成されます。
 
@@ -223,7 +223,7 @@ python run_preview.py
 | `python` が見つからない | Python 3.10以上を導入。Windowsでは `py` も試す |
 | `git` が見つからない | Gitを使わず **Code → Download ZIP** で取得 |
 | `test_stage2_bridge.py` が見つからない | PowerShellをReading Coreのファイルがあるフォルダで開いているか確認 |
-| `Ran 10 tests` と `OK` が出ない | エラーメッセージを確認。テストはVOICEVOX不要 |
+| `Ran 24 tests` と `OK` が出ない | エラーメッセージを確認。テストはVOICEVOX不要 |
 | VOICEVOXに接続できない | VOICEVOXを起動し、エンジンの `127.0.0.1:50021` を確認 |
 | 話者IDのエラー | 指定した `speaker` がVOICEVOXで利用可能か確認 |
 | `fallback_original` と表示される | 読み指定が1件か、対象語が文章中に1回だけあるか、読みがひらがなか確認 |
@@ -270,7 +270,7 @@ python run_preview.py
 | `bridge_handoff_test.py` | 4つの文章で実際の音声合成を試す |
 | `test_stage2_bridge.py` | VOICEVOX不要の24件の単体テスト（MD参照含む） |
 | `MISREAD_WORDS.md` | 誤読の確定登録と要確認候補を管理する追記式リスト |
-| `README.txt` | 開発当時の実験メモ |
+
 
 ## 開発の背景
 
