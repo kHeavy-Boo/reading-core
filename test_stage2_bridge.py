@@ -1,4 +1,4 @@
-"""10 independent local tests. No Ollama or live VOICEVOX required."""
+"""24 independent local tests. No Ollama or live VOICEVOX required."""
 import tempfile
 import unittest
 from pathlib import Path
