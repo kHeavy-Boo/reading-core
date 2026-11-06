@@ -4,14 +4,15 @@ import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from reading_engine import ReadingCorrection, ReadingEngine
+from reading_engine import READING_MD, ReadingCorrection, ReadingEngine, registered_readings
 
 OUTPUT = Path(__file__).parent / 'reading_bridge_audio_test'
 
 class ReadingBridgeLab:
-    def __init__(self, engine=None, output=None):
+    def __init__(self, engine=None, output=None, reading_md=None):
         self.engine = engine if engine is not None else ReadingEngine()
         self.output = Path(output) if output is not None else OUTPUT
+        self.reading_md = Path(reading_md) if reading_md is not None else READING_MD
         self.lock = threading.Lock()
 
     def process(self, payload):
@@ -30,6 +31,13 @@ class ReadingBridgeLab:
         baseline = self.engine.audio_query(text, speaker, speed)
         query, spoken = baseline, text
         mode, note = 'original', ''
+        try:
+            md_corrections = registered_readings(text, self.reading_md)
+        except (OSError, ValueError) as err:
+            md_corrections = []
+            note = f'MD lookup skipped: {err}'
+
+        external = None
         if cues not in ([], None):
             try:
                 if (not isinstance(cues, list) or len(cues) != 1
@@ -39,12 +47,37 @@ class ReadingBridgeLab:
                 word, reading = cues[0]['word'], cues[0]['reading']
                 if not isinstance(word, str) or not isinstance(reading, str):
                     raise ValueError('instruction must use strings')
-                spoken, query = self.engine.corrected_query(
-                    text, ReadingCorrection(word, reading), speaker, speed)
-                mode = 'corrected'
+                external = ReadingCorrection(word, reading)
+            except ValueError as err:
+                mode, note = 'fallback_original', str(err)
+
+        corrections = list(md_corrections)
+        external_used = False
+        if external is not None:
+            word = external.word
+            # A registered MD rule always wins over overlapping external cues.
+            if any(word in registered.word or registered.word in word for registered in corrections):
+                note = 'MD reading takes precedence over external reading'
+            else:
+                corrections.append(external)
+                external_used = True
+
+        if corrections:
+            try:
+                if len(corrections) == 1:
+                    spoken, query = self.engine.corrected_query(text, corrections[0], speaker, speed)
+                else:
+                    spoken, query = self.engine.corrected_query_many(text, corrections, speaker, speed)
+                if md_corrections and external_used:
+                    mode = 'md_and_external'
+                elif md_corrections:
+                    mode = 'md_corrected'
+                else:
+                    mode = 'corrected'
             except ValueError as err:
                 mode, note = 'fallback_original', str(err)
                 query, spoken = baseline, text
+
         wav = self.engine.synthesize(query, speaker)
         if not isinstance(wav, bytes) or not wav.startswith(b'RIFF'):
             raise ValueError('synthesis did not return a RIFF WAV')
@@ -52,15 +85,15 @@ class ReadingBridgeLab:
         report = {'mode': mode, 'original_text': text, 'tts_only_text': spoken,
                   'original_kana': baseline.get('kana', ''),
                   'final_kana': query.get('kana', ''), 'note': note,
+                  'md_matched': [c.word for c in md_corrections],
                   'wav_file': name + '.wav',
-                  'instruction_origin': 'test_fixture_not_chatgpt'}
+                  'instruction_origin': 'registered_md_and_test_fixture_not_chatgpt'}
         with self.lock:
             self.output.mkdir(parents=True, exist_ok=True)
             (self.output / (name + '.wav')).write_bytes(wav)
             (self.output / (name + '.json')).write_text(
                 json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
         return report
-
 
 def make_server(lab):
     class Handler(BaseHTTPRequestHandler):
