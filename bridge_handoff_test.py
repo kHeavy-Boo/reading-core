@@ -1,17 +1,15 @@
-"""Simulate Bridge sending text + Skully pronunciation cues. No AI inference here."""
+"""Smoke-test Reading Core with registered MD readings and live VOICEVOX."""
 import json
 import threading
 import urllib.request
 from reading_bridge_lab import ReadingBridgeLab, make_server
 
 # Explicit cues simulate Skully's future metadata. They are NOT sent by ChatGPT yet.
+# The registered readings are loaded from MISREAD_WORDS.md by ReadingBridgeLab.
 CASES = [
-    {'text': '夜の人気のない山道を歩いた。', 'speaker': 47,
-     'readings': [{'word': '人気', 'reading': 'ひとけ'}]},
-    {'text': '生物は冷蔵庫に入れてください。', 'speaker': 47,
-     'readings': [{'word': '生物', 'reading': 'なまもの'}]},
-    {'text': '市場で魚を買いました。', 'speaker': 47,
-     'readings': [{'word': '市場', 'reading': 'いちば'}]},
+    {'text': '夜の人気のない山道を歩いた。', 'speaker': 47},
+    {'text': '生物は冷蔵庫に入れてください。', 'speaker': 47},
+    {'text': '市場で魚を買いました。', 'speaker': 47},
     {'text': '今日の天気は晴れです。', 'speaker': 47},
 ]
 
@@ -23,7 +21,7 @@ def main():
     success = 0
     try:
         print('Stage2: Bridge形式 → Reading Engine → VOICEVOX', flush=True)
-        print('注意：読み方指示はテストコード内の指定値です。ChatGPT自動連携は未実装。', flush=True)
+        print('読み指定はMISREAD_WORDS.mdから取得。ChatGPT自動連携のテストではありません。', flush=True)
         for i, payload in enumerate(CASES, 1):
             print(f"\n[{i}] {payload['text']}", flush=True)
             req = urllib.request.Request(
